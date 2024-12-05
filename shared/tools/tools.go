@@ -7,4 +7,5 @@ import (
 	_ "github.com/golobby/container/v3"
 	_ "github.com/golobby/dotenv"
 	_ "github.com/labstack/echo/v4"
+	_ "github.com/patrickmn/go-cache"
 )
