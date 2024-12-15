@@ -34,7 +34,7 @@ func IoCDatabase() {
 			log.Fatal(err)
 		}
 
-		logger.InfoF("Connected to database: %s", appConfig.Postgres.Dsn)
+		logger.InfoF("Connected to database")
 
 		db.AutoMigrate(
 			&models.User{},

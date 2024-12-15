@@ -6,7 +6,7 @@ import (
 	"dreon_ecommerce_server/shared/enums"
 )
 
-type IAuthRepo interface {
+type IUserRepo interface {
 	FindAllUser(ctx context.Context, page, pageSize *int32, status *enums.UserStatus, search *string) (result *[]dtos.UserDto, total int64, err error)
 	FindUserByEmail(ctx context.Context, email string) (result *dtos.UserDto, err error)
 	FindUserById(ctx context.Context, userId string) (result *dtos.UserDto, err error)
