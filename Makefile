@@ -15,7 +15,7 @@ setup:
 run:
 	go run cmd/main.go
 
-dev_live:
+dev:
 	./scripts/dev_live.sh
 
-.PHONY: u_test env download setup run dev_live
+.PHONY: u_test env download setup run dev

@@ -11,7 +11,7 @@ type appLogger struct {
 }
 
 func NewAppLogger() (*appLogger, error) {
-	log, err := logger.New("LingoLift", 1, os.Stdout)
+	log, err := logger.New("DreonECommerce", 1, os.Stdout)
 	if err != nil {
 		return nil, err
 	}

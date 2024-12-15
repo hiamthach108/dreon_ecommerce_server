@@ -20,6 +20,9 @@ type AppConfig struct {
 		Url string `env:"MONGO_URL"`
 		Db  string `env:"MONGO_DB"`
 	}
+	Postgres struct {
+		Dsn string `env:"POSTGRES_DSN"`
+	}
 	Cache struct {
 		DefaultExpireTimeSec int    `env:"CACHE_DEFAULT_EXPIRE_TIME_SEC"`
 		CleanupIntervalHour  int    `env:"CACHE_CLEANUP_INTERVAL_HOUR"`

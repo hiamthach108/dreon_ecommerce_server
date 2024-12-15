@@ -12,6 +12,7 @@ func init() {
 	adapters.IoCCache()
 	adapters.IoCLogger()
 	adapters.IoCCrypto()
+	adapters.IoCDatabase()
 }
 
 func main() {
