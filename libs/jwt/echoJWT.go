@@ -1,8 +1,8 @@
 package jwt
 
 import (
+	"dreon_ecommerce_server/shared/constants"
 	"dreon_ecommerce_server/shared/enums"
-	"dreon_ecommerce_server/shared/errors"
 	"fmt"
 	"time"
 
@@ -19,19 +19,18 @@ type echoJWT struct {
 }
 
 type JwtCustomClaim struct {
-	Id             string             `json:"id,omitempty"`
-	Email          string             `json:"email,omitempty"`
-	AuthProvider   enums.AuthProvider `json:"authProvider,omitempty"`
-	AuthProviderId string             `json:"authProviderId,omitempty"`
+	Id         string           `json:"id,omitempty"`
+	Email      string           `json:"email,omitempty"`
+	AuthenType enums.AuthenType `json:"authenType,omitempty"`
 	jwt.RegisteredClaims
 }
 
 func (j *JwtCustomClaim) Valid() error {
 	if len(j.Id) <= 0 {
-		return errors.NewUnAuthorize(fmt.Errorf("invalid payload"), "unauthorize")
+		return constants.NewUnAuthorize(fmt.Errorf("invalid payload"), "unauthorize")
 	}
 	if j.ExpiresAt.Before(time.Now().UTC()) {
-		return errors.NewUnAuthorize(fmt.Errorf("token expired"), "unauthorize")
+		return constants.NewUnAuthorize(fmt.Errorf("token expired"), "unauthorize")
 	}
 	return nil
 }
@@ -45,12 +44,11 @@ func NewEchoJWT(signedKey, issuer string, mapperProvider mapper.IMapper, skipper
 	}
 }
 
-func (e *echoJWT) GenToken(id, email, authProviderId string, provider enums.AuthProvider) (token string, err error) {
+func (e *echoJWT) GenToken(id, email string, provider enums.AuthenType) (token string, err error) {
 	claim := &JwtCustomClaim{
-		Id:             id,
-		Email:          email,
-		AuthProvider:   provider,
-		AuthProviderId: authProviderId,
+		Id:         id,
+		Email:      email,
+		AuthenType: provider,
 	}
 	claim.ExpiresAt = jwt.NewNumericDate(time.Now().UTC().Add(time.Hour * 8640))
 	claim.IssuedAt = jwt.NewNumericDate(time.Now().UTC())

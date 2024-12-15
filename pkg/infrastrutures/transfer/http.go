@@ -1,7 +1,7 @@
 package transfer
 
 import (
-	"dreon_ecommerce_server/shared/errors"
+	"dreon_ecommerce_server/shared/constants"
 	"fmt"
 	"io"
 	"net/http"
@@ -29,7 +29,7 @@ func (h *httpTransfer) PerformGet(url string) (data []byte, err error) {
 		h.client.CloseIdleConnections()
 	}()
 	if resp.StatusCode != http.StatusOK {
-		err = errors.NewNotFound(fmt.Errorf("status code %d", resp.StatusCode), "Cannot get data from url")
+		err = constants.NewNotFound(fmt.Errorf("status code %d", resp.StatusCode), "Cannot get data from url")
 		return
 	}
 	data, err = io.ReadAll(resp.Body)

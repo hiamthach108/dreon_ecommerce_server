@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"context"
+	"dreon_ecommerce_server/shared/constants"
 	"dreon_ecommerce_server/shared/enums"
-	"dreon_ecommerce_server/shared/errors"
 	"fmt"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -16,20 +16,20 @@ func AuthMiddlewareEchoStrict(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		user, ok := c.Get("user").(*jwt.Token)
 		if !ok {
-			c.Error(errors.NewUnAuthorize(fmt.Errorf("invalid get token"), "unauthorize").ToEchoHTTPError())
+			c.Error(constants.NewUnAuthorize(fmt.Errorf("invalid get token"), "unauthorize").ToEchoHTTPError())
 			return nil
 		}
 		claims, ok := user.Claims.(*appJWT.JwtCustomClaim)
 		if !ok {
-			c.Error(errors.NewUnAuthorize(fmt.Errorf("invalid payload"), "unauthorize").ToEchoHTTPError())
+			c.Error(constants.NewUnAuthorize(fmt.Errorf("invalid payload"), "unauthorize").ToEchoHTTPError())
 			return next(c)
 		}
 		err := claims.Valid()
 		if err != nil {
-			if appErr, ok := err.(*errors.AppError); ok {
+			if appErr, ok := err.(*constants.AppError); ok {
 				c.Error(appErr.ToEchoHTTPError())
 			} else {
-				c.Error(errors.NewUnAuthorize(err, err.Error()).ToEchoHTTPError())
+				c.Error(constants.NewUnAuthorize(err, err.Error()).ToEchoHTTPError())
 			}
 			return nil
 		}

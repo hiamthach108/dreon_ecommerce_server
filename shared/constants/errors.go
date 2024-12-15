@@ -1,4 +1,4 @@
-package errors
+package constants
 
 import (
 	"encoding/json"
