@@ -52,13 +52,13 @@ func NewEchoJWT(signedKey, issuer string, mapperProvider mapper.IMapper, skipper
 	}
 }
 
-func (e *echoJWT) GenToken(id, email string, provider enums.AuthenType) (token string, err error) {
+func (e *echoJWT) GenToken(id, email string, provider enums.AuthenType, expiredAt int64) (token string, err error) {
 	claim := &JwtCustomClaim{
 		Id:         id,
 		Email:      email,
 		AuthenType: provider,
 	}
-	claim.ExpiresAt = jwt.NewNumericDate(time.Now().UTC().Add(time.Hour * 8640))
+	claim.ExpiresAt = jwt.NewNumericDate(time.Unix(expiredAt, 0).UTC())
 	claim.IssuedAt = jwt.NewNumericDate(time.Now().UTC())
 	claim.Issuer = e.issuer
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claim)

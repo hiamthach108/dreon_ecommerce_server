@@ -37,6 +37,8 @@ type AppConfig struct {
 			SecretKey        string `env:"JWT_SECRET_KEY"`
 			RefreshSecretKey string `env:"JWT_REFRESH_SECRET_KEY"`
 			Issuer           string `env:"JWT_ISSUER"`
+			ExpiredTime      int64  `env:"JWT_EXPIRED_TIME"`
+			RefreshExpired   int64  `env:"JWT_REFRESH_EXPIRED_TIME"`
 		}
 		IgnoreMethods map[string]bool
 	}

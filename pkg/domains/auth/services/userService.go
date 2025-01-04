@@ -73,3 +73,20 @@ func (s *userSvc) IsExistUserByEmail(ctx context.Context, email string) (result 
 
 	return
 }
+
+func (s *userSvc) FindUserByEmail(ctx context.Context, email string) (result *dtos.UserDto, err error) {
+	action := "userSvc.FindUserByEmail"
+
+	r, err := s.userRepo.FindUserByEmail(ctx, email)
+	if err != nil {
+		s.logger.Errorf("%s error %v", action, err)
+		return
+	}
+
+	err = s.mapper.Mapper(&r, &result)
+	if err != nil {
+		return
+	}
+
+	return
+}

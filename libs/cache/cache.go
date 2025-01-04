@@ -3,6 +3,7 @@ package cache
 import (
 	"dreon_ecommerce_server/shared/interfaces"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -23,6 +24,8 @@ func NewAppCache(logger interfaces.ILogger, defaultExpire, cleanupInterval *time
 		cleanupInterval = new(time.Duration)
 		*cleanupInterval = time.Hour * 24
 	}
+
+	logger.Info("Connecting to cache server")
 	return &appCache{
 		cache:  cache.New(*defaultExpire, *cleanupInterval),
 		logger: logger,
@@ -40,14 +43,14 @@ func (c *appCache) Set(key string, value interface{}, expireTime *time.Duration)
 	if err != nil {
 		return err
 	}
-	c.cache.Set(key, b, *expireTime)
+	c.cache.Set(fmt.Sprintf("dreon_ecommerce:%s", key), b, *expireTime)
 	return nil
 }
 
 func (c *appCache) Get(key string) (interface{}, error) {
 	action := "appCache.Get"
 	c.logger.Infof("[%s] get key %s", action, key)
-	value, found := c.cache.Get(key)
+	value, found := c.cache.Get(fmt.Sprintf("dreon_ecommerce:%s", key))
 	if !found {
 		return nil, nil
 	}
@@ -62,7 +65,7 @@ func (c *appCache) Get(key string) (interface{}, error) {
 func (c *appCache) Delete(key string) error {
 	action := "appCache.Delete"
 	c.logger.Infof("[%s] delete key %s", action, key)
-	c.cache.Delete(key)
+	c.cache.Delete(fmt.Sprintf("dreon_ecommerce:%s", key))
 	return nil
 }
 

@@ -9,6 +9,7 @@ import (
 	"dreon_ecommerce_server/pkg/infrastrutures/repositories"
 	"dreon_ecommerce_server/shared/enums"
 	sharedI "dreon_ecommerce_server/shared/interfaces"
+	"errors"
 
 	"github.com/devfeel/mapper"
 	"github.com/golobby/container/v3"
@@ -23,6 +24,7 @@ type authSvc struct {
 
 type IAuthSvc interface {
 	RegisterByPassword(ctx context.Context, email, password, firstName, lastName string) (user *dtos.UserDto, err error)
+	LoginByPassword(ctx context.Context, email, password string) (user *dtos.UserDto, err error)
 }
 
 func NewAuthSvc() *authSvc {
@@ -76,4 +78,25 @@ func (s *authSvc) RegisterByPassword(ctx context.Context, email, password, first
 	err = s.mapper.AutoMapper(new, user)
 
 	return
+}
+
+func (s *authSvc) LoginByPassword(ctx context.Context, email, password string) (user *dtos.UserDto, err error) {
+	action := "authSvc.LoginByPassword"
+
+	u, err := s.userRepo.FindUserByEmail(ctx, email)
+	if err != nil || u == nil {
+		s.logger.Errorf("[%s] error %v", action, err)
+		return nil, errors.New("user not found")
+	}
+
+	err = s.crypto.Compare(password, u.Password)
+	if err != nil {
+		return nil, errors.New("invalid password")
+	}
+
+	user = &dtos.UserDto{}
+
+	s.mapper.Mapper(u, user)
+
+	return user, nil
 }

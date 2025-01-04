@@ -20,7 +20,7 @@ type authController struct {
 }
 
 func NewAuthController(appConfigs *configs.AppConfig, logger sharedI.ILogger) *authController {
-	au := usecases.NewAuthUsecase(logger)
+	au := usecases.NewAuthUsecase(appConfigs, logger)
 
 	return &authController{
 		appConfigs:  appConfigs,
