@@ -2,7 +2,7 @@ package adapters
 
 import (
 	"dreon_ecommerce_server/pkg/domains/auth/dtos"
-	"dreon_ecommerce_server/pkg/infrastrutures/models"
+	"dreon_ecommerce_server/pkg/infrastructures/models"
 	"log"
 
 	"github.com/devfeel/mapper"

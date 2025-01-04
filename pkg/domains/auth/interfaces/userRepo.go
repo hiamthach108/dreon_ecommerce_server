@@ -3,7 +3,7 @@ package interfaces
 import (
 	"context"
 	"dreon_ecommerce_server/pkg/domains/auth/dtos"
-	"dreon_ecommerce_server/pkg/infrastrutures/models"
+	"dreon_ecommerce_server/pkg/infrastructures/models"
 	"dreon_ecommerce_server/shared/enums"
 )
 

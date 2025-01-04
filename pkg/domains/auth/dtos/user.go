@@ -2,7 +2,7 @@ package dtos
 
 type UserDto struct {
 	Id        string `json:"id"`
-	Email     string `json:"username,omitempty"`
+	Email     string `json:"email,omitempty"`
 	FirstName string `json:"firstName,omitempty"`
 	LastName  string `json:"lastName,omitempty"`
 	BirthDate int64  `json:"birthDate,omitempty"`

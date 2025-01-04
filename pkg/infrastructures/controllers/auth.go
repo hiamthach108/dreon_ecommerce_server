@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"dreon_ecommerce_server/shared/constants"
+	"dreon_ecommerce_server/shared/enums"
 	"dreon_ecommerce_server/shared/helpers"
 	sharedI "dreon_ecommerce_server/shared/interfaces"
 
@@ -62,6 +63,26 @@ func (c *authController) Register(ctx echo.Context) (err error) {
 			return appErr.ToEchoHTTPError()
 		}
 		appErr := constants.NewBadRequest(err, "register failed")
+
+		return appErr.ToEchoHTTPError()
+	}
+
+	return helpers.SuccessResponse(ctx, result)
+}
+
+func (c *authController) GetProfile(ctx echo.Context) (err error) {
+	userID, ok := ctx.Request().Context().Value(enums.UserIDContextKey).(string)
+	if !ok {
+		appErr := constants.NewUnAuthorize(nil, "unauthorize")
+		return appErr.ToEchoHTTPError()
+	}
+
+	result, err := c.authUsecase.GetUserProfile(ctx.Request().Context(), userID)
+	if err != nil || result == nil {
+		if appErr, ok := err.(*constants.AppError); ok {
+			return appErr.ToEchoHTTPError()
+		}
+		appErr := constants.NewBadRequest(err, "get profile failed")
 
 		return appErr.ToEchoHTTPError()
 	}

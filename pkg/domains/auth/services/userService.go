@@ -5,7 +5,7 @@ import (
 	"dreon_ecommerce_server/libs/crypto"
 	"dreon_ecommerce_server/pkg/domains/auth/dtos"
 	"dreon_ecommerce_server/pkg/domains/auth/interfaces"
-	"dreon_ecommerce_server/pkg/infrastrutures/repositories"
+	"dreon_ecommerce_server/pkg/infrastructures/repositories"
 	"dreon_ecommerce_server/shared/enums"
 	sharedI "dreon_ecommerce_server/shared/interfaces"
 
@@ -23,6 +23,8 @@ type userSvc struct {
 type IUserSvc interface {
 	FindAllUser(ctx context.Context, page, pageSize *int32, status *enums.UserStatus, search *string) (result *[]dtos.UserDto, total int64, err error)
 	IsExistUserByEmail(ctx context.Context, email string) (result bool, err error)
+	FindUserByEmail(ctx context.Context, email string) (result *dtos.UserDto, err error)
+	FindUserById(ctx context.Context, id string) (result *dtos.UserDto, err error)
 }
 
 func NewUserSvc() *userSvc {
@@ -83,10 +85,31 @@ func (s *userSvc) FindUserByEmail(ctx context.Context, email string) (result *dt
 		return
 	}
 
-	err = s.mapper.Mapper(&r, &result)
+	result = &dtos.UserDto{}
+
+	err = s.mapper.Mapper(r, result)
 	if err != nil {
 		return
 	}
 
-	return
+	return result, nil
+}
+
+func (s *userSvc) FindUserById(ctx context.Context, id string) (result *dtos.UserDto, err error) {
+	action := "userSvc.FindUserById"
+
+	r, err := s.userRepo.FindUserById(ctx, id)
+	if err != nil {
+		s.logger.Errorf("%s error %v", action, err)
+		return
+	}
+
+	result = &dtos.UserDto{}
+
+	err = s.mapper.Mapper(r, result)
+	if err != nil {
+		return
+	}
+
+	return result, nil
 }

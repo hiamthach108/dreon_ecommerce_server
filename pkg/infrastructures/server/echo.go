@@ -3,11 +3,13 @@ package server
 import (
 	"dreon_ecommerce_server/configs"
 	"dreon_ecommerce_server/libs/jwt"
-	"dreon_ecommerce_server/pkg/infrastrutures/controllers"
+	"dreon_ecommerce_server/pkg/infrastructures/controllers"
 	"dreon_ecommerce_server/shared/interfaces"
 	"fmt"
 	"net/http"
 	"time"
+
+	appMiddleware "dreon_ecommerce_server/pkg/infrastructures/server/middleware"
 
 	"github.com/devfeel/mapper"
 	"github.com/golobby/container/v3"
@@ -96,4 +98,5 @@ func AuthGroup(group *echo.Group, appConfig *configs.AppConfig, logger interface
 
 	group.POST("/login", authController.Login)
 	group.POST("/register", authController.Register)
+	group.GET("/profile", authController.GetProfile, appMiddleware.AuthMiddlewareEcho)
 }

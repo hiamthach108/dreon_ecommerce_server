@@ -4,7 +4,7 @@ import (
 	"context"
 	"dreon_ecommerce_server/pkg/domains/auth/dtos"
 	repoI "dreon_ecommerce_server/pkg/domains/auth/interfaces"
-	"dreon_ecommerce_server/pkg/infrastrutures/models"
+	"dreon_ecommerce_server/pkg/infrastructures/models"
 	"dreon_ecommerce_server/shared/constants"
 	"dreon_ecommerce_server/shared/enums"
 	"dreon_ecommerce_server/shared/interfaces"

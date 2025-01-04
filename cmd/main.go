@@ -2,7 +2,7 @@ package main
 
 import (
 	"dreon_ecommerce_server/pkg/adapters"
-	"dreon_ecommerce_server/pkg/infrastrutures/server"
+	"dreon_ecommerce_server/pkg/infrastructures/server"
 )
 
 func init() {

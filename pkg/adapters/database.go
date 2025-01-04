@@ -2,7 +2,7 @@ package adapters
 
 import (
 	"dreon_ecommerce_server/configs"
-	"dreon_ecommerce_server/pkg/infrastrutures/models"
+	"dreon_ecommerce_server/pkg/infrastructures/models"
 	sharedI "dreon_ecommerce_server/shared/interfaces"
 	"log"
 

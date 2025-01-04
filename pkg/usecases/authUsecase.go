@@ -30,6 +30,7 @@ type authUsecase struct {
 type IAuthUsecase interface {
 	Login(ctx context.Context, req *dtos.LoginReq) (result *dtos.LoginResp, err error)
 	Register(ctx context.Context, req *dtos.RegisterReq) (result *dtos.RegisterResp, err error)
+	GetUserProfile(ctx context.Context, userId string) (result *dtos.UserDto, err error)
 }
 
 func NewAuthUsecase(appConfigs *configs.AppConfig, logger sharedI.ILogger) *authUsecase {
@@ -157,4 +158,18 @@ func (u *authUsecase) generateToken(user *dtos.UserDto) (accessToken string, acc
 	}
 
 	return
+}
+
+func (u *authUsecase) GetUserProfile(ctx context.Context, userId string) (result *dtos.UserDto, err error) {
+	action := "authUsecase.GetUserProfile"
+
+	u.logger.Infof("%s start: userId %s", action, userId)
+
+	user, err := u.userSvc.FindUserById(ctx, userId)
+	if err != nil {
+		u.logger.Errorf("[%s] error: %v", action, err)
+		return
+	}
+
+	return user, nil
 }
