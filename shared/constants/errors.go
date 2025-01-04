@@ -72,7 +72,7 @@ func NewUnAuthorize(err error, message string) *AppError {
 	}
 }
 
-func NewForbiden(err error, message string) *AppError {
+func NewForbidden(err error, message string) *AppError {
 	reason := ""
 	if err != nil {
 		reason = err.Error()

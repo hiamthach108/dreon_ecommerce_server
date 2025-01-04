@@ -16,6 +16,14 @@ type echoJWT struct {
 	issuer         string
 	skipper        map[string]bool
 	mapperProvider mapper.IMapper
+	IEchoJWT
+}
+
+type IEchoJWT interface {
+	GenToken(id, email string, provider enums.AuthenType) (token string, err error)
+	NewClaimFunc(c echo.Context) jwt.Claims
+	Skipper(c echo.Context)
+	GetSignedKey()
 }
 
 type JwtCustomClaim struct {

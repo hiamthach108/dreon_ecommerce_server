@@ -3,7 +3,7 @@ package adapters
 import (
 	"dreon_ecommerce_server/configs"
 	"dreon_ecommerce_server/pkg/infrastrutures/models"
-	"dreon_ecommerce_server/shared/interfaces"
+	sharedI "dreon_ecommerce_server/shared/interfaces"
 	"log"
 
 	"github.com/golobby/container/v3"
@@ -15,7 +15,7 @@ func IoCDatabase() {
 	container.Singleton(func() *gorm.DB {
 		var (
 			appConfig *configs.AppConfig
-			logger    interfaces.ILogger
+			logger    sharedI.ILogger
 			err       error
 		)
 

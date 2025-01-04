@@ -3,6 +3,8 @@ package server
 import (
 	"dreon_ecommerce_server/configs"
 	"dreon_ecommerce_server/libs/jwt"
+	"dreon_ecommerce_server/pkg/infrastrutures/controllers"
+	"dreon_ecommerce_server/shared/interfaces"
 	"fmt"
 	"net/http"
 	"time"
@@ -21,9 +23,15 @@ func StartEchoServer() {
 		e              = echo.New()
 		mapperProvider mapper.IMapper
 		err            error
+		logger         interfaces.ILogger
 	)
 
 	err = container.Resolve(&configs)
+	if err != nil {
+		panic(err)
+	}
+
+	err = container.Resolve(&logger)
 	if err != nil {
 		panic(err)
 	}
@@ -76,6 +84,16 @@ func StartEchoServer() {
 		return c.String(http.StatusOK, "pong")
 	})
 
+	authGroup := e.Group("/auth")
+	AuthGroup(authGroup, configs, logger)
+
 	e.Logger.Error(e.StartH2CServer(fmt.Sprintf("%s:%s", configs.Server.Host, configs.Server.Port), h2s))
 
+}
+
+func AuthGroup(group *echo.Group, appConfig *configs.AppConfig, logger interfaces.ILogger) {
+	authController := controllers.NewAuthController(appConfig, logger)
+
+	group.POST("/login", authController.Login)
+	group.POST("/register", authController.Register)
 }
