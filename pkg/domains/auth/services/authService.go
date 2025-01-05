@@ -98,5 +98,7 @@ func (s *authSvc) LoginByPassword(ctx context.Context, email, password string) (
 
 	s.mapper.Mapper(u, user)
 
+	go s.userRepo.UpdateLastLogin(ctx, u.Id)
+
 	return user, nil
 }

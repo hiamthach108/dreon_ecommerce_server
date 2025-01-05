@@ -31,6 +31,7 @@ type IAuthUsecase interface {
 	Login(ctx context.Context, req *dtos.LoginReq) (result *dtos.LoginResp, err error)
 	Register(ctx context.Context, req *dtos.RegisterReq) (result *dtos.RegisterResp, err error)
 	GetUserProfile(ctx context.Context, userId string) (result *dtos.UserDto, err error)
+	RefreshToken(ctx context.Context, req *dtos.RefreshTokenReq) (result *dtos.RefreshTokenResp, err error)
 }
 
 func NewAuthUsecase(appConfigs *configs.AppConfig, logger sharedI.ILogger) *authUsecase {
@@ -82,7 +83,7 @@ func (u *authUsecase) Login(ctx context.Context, req *dtos.LoginReq) (result *dt
 
 	result.UserId = user.Id
 
-	accessToken, accessTokenExpAt, refreshToken, refreshTokenExpAt, err := u.generateToken(user)
+	accessToken, accessTokenExpAt, refreshToken, refreshTokenExpAt, err := u.generateToken(user, false)
 	if err != nil {
 		u.logger.Errorf("[%s] error: %v", action, err)
 		return nil, err
@@ -115,7 +116,7 @@ func (u *authUsecase) Register(ctx context.Context, req *dtos.RegisterReq) (resu
 		UserId: user.Id,
 	}
 
-	accessToken, accessTokenExpAt, refreshToken, refreshTokenExpAt, err := u.generateToken(user)
+	accessToken, accessTokenExpAt, refreshToken, refreshTokenExpAt, err := u.generateToken(user, false)
 	if err != nil {
 		u.logger.Errorf("[%s] error: %v", action, err)
 		return result, nil
@@ -129,7 +130,7 @@ func (u *authUsecase) Register(ctx context.Context, req *dtos.RegisterReq) (resu
 	return result, nil
 }
 
-func (u *authUsecase) generateToken(user *dtos.UserDto) (accessToken string, accessTokenExpAt int64, refreshToken string, refreshTokenExpAt int64, err error) {
+func (u *authUsecase) generateToken(user *dtos.UserDto, isRefresh bool) (accessToken string, accessTokenExpAt int64, refreshToken string, refreshTokenExpAt int64, err error) {
 	action := "authUsecase.generateToken"
 
 	jwt := jwt.NewEchoJWT(u.configs.Auth.JWT.SecretKey, u.configs.Auth.JWT.Issuer, u.mapper, u.configs.Auth.IgnoreMethods)
@@ -142,19 +143,21 @@ func (u *authUsecase) generateToken(user *dtos.UserDto) (accessToken string, acc
 		return
 	}
 
-	refreshDuration := time.Duration(u.configs.Auth.JWT.RefreshExpired) * time.Minute
-	refreshTokenExpAt = time.Now().Add(refreshDuration).UTC().Unix()
-	refreshToken, err = helpers.GenerateRandomString(24)
-	if err != nil {
-		u.logger.Errorf("[%s] error: %v", action, err)
-		return
-	}
+	if !isRefresh {
+		refreshDuration := time.Duration(u.configs.Auth.JWT.RefreshExpired) * time.Minute
+		refreshTokenExpAt = time.Now().Add(refreshDuration).UTC().Unix()
+		refreshToken, err = helpers.GenerateRandomString(24)
+		if err != nil {
+			u.logger.Errorf("[%s] error: %v", action, err)
+			return
+		}
 
-	cacheKey := fmt.Sprintf("users:%s:rfk:%s", user.Id, refreshToken)
-	err = u.cache.Set(cacheKey, user.Id, &refreshDuration)
-	if err != nil {
-		u.logger.Errorf("[%s] error: %v", action, err)
-		return
+		cacheKey := fmt.Sprintf("users:%s:rfk:%s", user.Id, refreshToken)
+		err = u.cache.Set(cacheKey, user.Id, &refreshDuration)
+		if err != nil {
+			u.logger.Errorf("[%s] error: %v", action, err)
+			return
+		}
 	}
 
 	return
@@ -172,4 +175,39 @@ func (u *authUsecase) GetUserProfile(ctx context.Context, userId string) (result
 	}
 
 	return user, nil
+}
+
+func (u *authUsecase) RefreshToken(ctx context.Context, req *dtos.RefreshTokenReq) (result *dtos.RefreshTokenResp, err error) {
+	action := "authUsecase.RefreshToken"
+
+	u.logger.Infof("%s start: refreshToken %s", action, req.RefreshToken, req.UserId)
+
+	userId, err := u.cache.Get(fmt.Sprintf("users:%s:rfk:%s", req.UserId, req.RefreshToken))
+	if err != nil {
+		u.logger.Errorf("[%s] error: %v", action, err)
+		return
+	}
+
+	if userId == nil {
+		return nil, errors.New("refresh token not found")
+	}
+
+	user, err := u.userSvc.FindUserById(ctx, (userId).(string))
+	if err != nil {
+		u.logger.Errorf("[%s] error: %v", action, err)
+		return
+	}
+
+	accessToken, accessTokenExpAt, _, _, err := u.generateToken(user, true)
+	if err != nil {
+		u.logger.Errorf("[%s] error: %v", action, err)
+		return nil, err
+	}
+
+	result = &dtos.RefreshTokenResp{
+		AccessToken:    accessToken,
+		AccessTokenExp: accessTokenExpAt,
+	}
+
+	return
 }

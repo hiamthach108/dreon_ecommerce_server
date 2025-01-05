@@ -1,81 +1,89 @@
 package cache
 
 import (
+	"context"
 	"dreon_ecommerce_server/shared/interfaces"
 	"encoding/json"
 	"fmt"
 	"time"
 
-	"github.com/patrickmn/go-cache"
+	"dreon_ecommerce_server/configs"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type appCache struct {
-	cache  *cache.Cache
-	logger interfaces.ILogger
+	logger      interfaces.ILogger
+	redisClient *redis.Client
 	interfaces.ICache
 }
 
-func NewAppCache(logger interfaces.ILogger, defaultExpire, cleanupInterval *time.Duration) *appCache {
-	if defaultExpire == nil {
-		defaultExpire = new(time.Duration)
-		*defaultExpire = time.Hour * 24
-	}
-	if cleanupInterval == nil {
-		cleanupInterval = new(time.Duration)
-		*cleanupInterval = time.Hour * 24
-	}
+func NewAppCache(c *configs.AppConfig, logger interfaces.ILogger) *appCache {
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     c.Cache.RedisHost + ":" + c.Cache.RedisPort,
+		Password: c.Cache.RedisPassword,
+		DB:       c.Cache.RedisDB,
+	})
 
-	logger.Info("Connecting to cache server")
+	logger.Info("Connected to cache server")
 	return &appCache{
-		cache:  cache.New(*defaultExpire, *cleanupInterval),
-		logger: logger,
+		logger:      logger,
+		redisClient: redisClient,
 	}
 }
 
 func (c *appCache) Set(key string, value interface{}, expireTime *time.Duration) error {
 	action := "appCache.Set"
 	c.logger.Infof("[%s] set key %s", action, key)
-	if expireTime == nil {
-		expireTime = new(time.Duration)
-		*expireTime = cache.DefaultExpiration
-	}
-	b, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-	c.cache.Set(fmt.Sprintf("dreon_ecommerce:%s", key), b, *expireTime)
+	rKey := fmt.Sprintf("dreon_ecommerce:%s", key)
+	c.redisClient.Set(context.Background(), rKey, value, *expireTime)
 	return nil
 }
 
 func (c *appCache) Get(key string) (interface{}, error) {
 	action := "appCache.Get"
 	c.logger.Infof("[%s] get key %s", action, key)
-	value, found := c.cache.Get(fmt.Sprintf("dreon_ecommerce:%s", key))
-	if !found {
-		return nil, nil
-	}
-	var result interface{}
-	err := json.Unmarshal(value.([]byte), &result)
+	rKey := fmt.Sprintf("dreon_ecommerce:%s", key)
+	val, err := c.redisClient.Get(context.Background(), rKey).Result()
 	if err != nil {
 		return nil, err
 	}
+
+	var result interface{}
+	err = json.Unmarshal([]byte(val), &result)
+	if err != nil {
+		return nil, err
+	}
+
 	return result, nil
 }
 
 func (c *appCache) Delete(key string) error {
 	action := "appCache.Delete"
 	c.logger.Infof("[%s] delete key %s", action, key)
-	c.cache.Delete(fmt.Sprintf("dreon_ecommerce:%s", key))
+	rKey := fmt.Sprintf("dreon_ecommerce:%s", key)
+	c.redisClient.Del(context.Background(), rKey)
 	return nil
 }
 
 func (c *appCache) Clear() error {
 	action := "appCache.Clear"
 	c.logger.Infof("[%s] clear cache", action)
-	c.cache.Flush()
+	c.redisClient.FlushAll(context.Background())
 	return nil
 }
 
 func (c *appCache) ClearWithPrefix(prefix string) error {
+	action := "appCache.ClearWithPrefix"
+	c.logger.Infof("[%s] clear cache with prefix %s", action, prefix)
+	keys, err := c.redisClient.Keys(context.Background(), fmt.Sprintf("dreon_ecommerce:%s*", prefix)).Result()
+	if err != nil {
+		return err
+	}
+
+	for _, key := range keys {
+		c.redisClient.Del(context.Background(), key)
+	}
+
 	return nil
 }

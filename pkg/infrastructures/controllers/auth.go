@@ -89,3 +89,23 @@ func (c *authController) GetProfile(ctx echo.Context) (err error) {
 
 	return helpers.SuccessResponse(ctx, result)
 }
+
+func (c *authController) RefreshToken(ctx echo.Context) (err error) {
+	body := &dtos.RefreshTokenReq{}
+	if err := ctx.Bind(body); err != nil {
+		appErr := constants.NewBadRequest(err, "invalid request body")
+		return appErr.ToEchoHTTPError()
+	}
+
+	result, err := c.authUsecase.RefreshToken(ctx.Request().Context(), body)
+	if err != nil || result == nil {
+		if appErr, ok := err.(*constants.AppError); ok {
+			return appErr.ToEchoHTTPError()
+		}
+		appErr := constants.NewBadRequest(err, "refresh token failed")
+
+		return appErr.ToEchoHTTPError()
+	}
+
+	return helpers.SuccessResponse(ctx, result)
+}

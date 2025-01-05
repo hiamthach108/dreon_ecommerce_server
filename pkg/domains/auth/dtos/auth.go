@@ -27,3 +27,13 @@ type RegisterResp struct {
 	UserId string `json:"userId"`
 	LoginResp
 }
+
+type RefreshTokenReq struct {
+	RefreshToken string `json:"refreshToken"`
+	UserId       string `json:"userId"`
+}
+
+type RefreshTokenResp struct {
+	AccessToken    string `json:"accessToken"`
+	AccessTokenExp int64  `json:"accessTokenExp"`
+}

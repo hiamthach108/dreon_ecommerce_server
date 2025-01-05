@@ -8,6 +8,7 @@ import (
 	"dreon_ecommerce_server/shared/constants"
 	"dreon_ecommerce_server/shared/enums"
 	"dreon_ecommerce_server/shared/interfaces"
+	"time"
 
 	"github.com/golobby/container/v3"
 	"github.com/google/uuid"
@@ -122,7 +123,7 @@ func (r *userRepo) Create(ctx context.Context, user *models.User) (result *model
 }
 
 func (r *userRepo) UpdateLastLogin(ctx context.Context, userId string) (err error) {
-	err = r.db.Model(&models.User{}).Where("id = ?", userId).Update("last_login", "NOW()").Error
+	err = r.db.Model(&models.User{}).Where("id = ?", userId).Update("last_login", time.Now().UTC().Unix()).Error
 	return
 }
 

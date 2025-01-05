@@ -5,7 +5,6 @@ import (
 	"dreon_ecommerce_server/libs/cache"
 	"dreon_ecommerce_server/shared/interfaces"
 	"log"
-	"time"
 
 	"github.com/golobby/container/v3"
 )
@@ -27,8 +26,6 @@ func IoCCache() {
 			log.Fatal(err)
 		}
 
-		expiredTime := time.Duration(appConfig.Cache.DefaultExpireTimeSec) * time.Second
-		cleanupInterval := time.Duration(appConfig.Cache.CleanupIntervalHour) * time.Hour
-		return cache.NewAppCache(logger, &expiredTime, &cleanupInterval)
+		return cache.NewAppCache(appConfig, logger)
 	})
 }
