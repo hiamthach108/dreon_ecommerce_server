@@ -41,6 +41,10 @@ type AppConfig struct {
 			RefreshExpired   int64  `env:"JWT_REFRESH_EXPIRED_TIME"`
 		}
 		IgnoreMethods map[string]bool
+		Google        struct {
+			ClientID     string `env:"GOOGLE_CLIENT_ID"`
+			ClientSecret string `env:"GOOGLE_CLIENT_SECRET"`
+		}
 	}
 }
 

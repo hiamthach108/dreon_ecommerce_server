@@ -100,4 +100,5 @@ func AuthGroup(group *echo.Group, appConfig *configs.AppConfig, logger interface
 	group.POST("/register", authController.Register)
 	group.GET("/profile", authController.GetProfile, appMiddleware.AuthMiddlewareEcho)
 	group.POST("/refresh-token", authController.RefreshToken)
+	group.GET("/google/callback", authController.GoogleCallback)
 }

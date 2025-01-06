@@ -9,11 +9,12 @@ type LoginReq struct {
 }
 
 type LoginResp struct {
-	UserId          string `json:"userId"`
-	AccessToken     string `json:"accessToken"`
-	RefreshToken    string `json:"refreshToken"`
-	AccessTokenExp  int64  `json:"accessTokenExp"`
-	RefreshTokenExp int64  `json:"refreshTokenExp"`
+	UserId          string           `json:"userId"`
+	AccessToken     string           `json:"accessToken"`
+	RefreshToken    string           `json:"refreshToken"`
+	AccessTokenExp  int64            `json:"accessTokenExp"`
+	RefreshTokenExp int64            `json:"refreshTokenExp"`
+	Google          *OAuthGoogleResp `json:"google"`
 }
 
 type RegisterReq struct {
@@ -36,4 +37,9 @@ type RefreshTokenReq struct {
 type RefreshTokenResp struct {
 	AccessToken    string `json:"accessToken"`
 	AccessTokenExp int64  `json:"accessTokenExp"`
+}
+
+type OAuthGoogleResp struct {
+	Url   string `json:"url"`
+	State string `json:"state"`
 }

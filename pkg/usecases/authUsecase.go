@@ -4,8 +4,10 @@ import (
 	"context"
 	"dreon_ecommerce_server/configs"
 	"dreon_ecommerce_server/libs/jwt"
+	"dreon_ecommerce_server/libs/oauth"
 	"dreon_ecommerce_server/pkg/domains/auth/dtos"
 	"dreon_ecommerce_server/pkg/domains/auth/services"
+	"dreon_ecommerce_server/shared/constants"
 	"dreon_ecommerce_server/shared/enums"
 	"dreon_ecommerce_server/shared/helpers"
 	sharedI "dreon_ecommerce_server/shared/interfaces"
@@ -21,6 +23,7 @@ type authUsecase struct {
 	IAuthUsecase
 	logger  sharedI.ILogger
 	configs *configs.AppConfig
+	oauth   oauth.IAppOAuth
 	mapper  mapper.IMapper
 	cache   sharedI.ICache
 	userSvc services.IUserSvc
@@ -32,6 +35,7 @@ type IAuthUsecase interface {
 	Register(ctx context.Context, req *dtos.RegisterReq) (result *dtos.RegisterResp, err error)
 	GetUserProfile(ctx context.Context, userId string) (result *dtos.UserDto, err error)
 	RefreshToken(ctx context.Context, req *dtos.RefreshTokenReq) (result *dtos.RefreshTokenResp, err error)
+	GoogleOAuthCallBack(ctx context.Context, code, state string) (result *dtos.LoginResp, err error)
 }
 
 func NewAuthUsecase(appConfigs *configs.AppConfig, logger sharedI.ILogger) *authUsecase {
@@ -43,6 +47,8 @@ func NewAuthUsecase(appConfigs *configs.AppConfig, logger sharedI.ILogger) *auth
 	var cache sharedI.ICache
 	container.Resolve(&cache)
 
+	oauthLib := oauth.NewAppOAuth(appConfigs, logger)
+
 	return &authUsecase{
 		logger:  logger,
 		configs: appConfigs,
@@ -50,6 +56,7 @@ func NewAuthUsecase(appConfigs *configs.AppConfig, logger sharedI.ILogger) *auth
 		userSvc: userSvc,
 		authSvc: authSvc,
 		cache:   cache,
+		oauth:   oauthLib,
 	}
 }
 
@@ -68,8 +75,13 @@ func (u *authUsecase) Login(ctx context.Context, req *dtos.LoginReq) (result *dt
 			return nil, err
 		}
 	case enums.GoogleAuthenType:
-		// TODO: implement google login
-		return nil, errors.New("google login not implemented")
+		url, state := u.oauth.GetGoogleOAuthUrl()
+		result.Google = &dtos.OAuthGoogleResp{
+			Url:   url,
+			State: state,
+		}
+		return result, nil
+
 	case enums.FacebookAuthenType:
 		// TODO: implement facebook login
 		return nil, errors.New("facebook login not implemented")
@@ -146,7 +158,7 @@ func (u *authUsecase) generateToken(user *dtos.UserDto, isRefresh bool) (accessT
 	if !isRefresh {
 		refreshDuration := time.Duration(u.configs.Auth.JWT.RefreshExpired) * time.Minute
 		refreshTokenExpAt = time.Now().Add(refreshDuration).UTC().Unix()
-		refreshToken, err = helpers.GenerateRandomString(24)
+		refreshToken, err = helpers.GenerateRandomString(constants.REFRESH_TOKEN_LEN)
 		if err != nil {
 			u.logger.Errorf("[%s] error: %v", action, err)
 			return
@@ -182,20 +194,47 @@ func (u *authUsecase) RefreshToken(ctx context.Context, req *dtos.RefreshTokenRe
 
 	u.logger.Infof("%s start: refreshToken %s", action, req.RefreshToken, req.UserId)
 
-	userId, err := u.cache.Get(fmt.Sprintf("users:%s:rfk:%s", req.UserId, req.RefreshToken))
-	if err != nil {
-		u.logger.Errorf("[%s] error: %v", action, err)
-		return
+	if req.RefreshToken == "" {
+		return nil, errors.New("refresh token is required")
 	}
 
-	if userId == nil {
-		return nil, errors.New("refresh token not found")
-	}
+	var user *dtos.UserDto
 
-	user, err := u.userSvc.FindUserById(ctx, (userId).(string))
-	if err != nil {
-		u.logger.Errorf("[%s] error: %v", action, err)
-		return
+	tokenLen := len(req.RefreshToken)
+
+	if tokenLen == constants.REFRESH_TOKEN_OAUTH_LEN {
+		state := fmt.Sprintf("users:state:%s", req.RefreshToken)
+		userData, err := u.cache.Get(state)
+		if err != nil {
+			u.logger.Errorf("[%s] error: %v", action, err)
+			return nil, err
+		}
+
+		if userData == nil {
+			return nil, errors.New("state not found")
+		}
+
+		user, err = u.userSvc.FindUserById(ctx, (userData).(string))
+		if err != nil {
+			u.logger.Errorf("[%s] error: %v", action, err)
+			return nil, err
+		}
+	} else {
+		userId, err := u.cache.Get(fmt.Sprintf("users:%s:rfk:%s", req.UserId, req.RefreshToken))
+		if err != nil {
+			u.logger.Errorf("[%s] error: %v", action, err)
+			return nil, err
+		}
+
+		if userId == nil {
+			return nil, errors.New("refresh token not found")
+		}
+
+		user, err = u.userSvc.FindUserById(ctx, (userId).(string))
+		if err != nil {
+			u.logger.Errorf("[%s] error: %v", action, err)
+			return nil, err
+		}
 	}
 
 	accessToken, accessTokenExpAt, _, _, err := u.generateToken(user, true)
@@ -207,6 +246,56 @@ func (u *authUsecase) RefreshToken(ctx context.Context, req *dtos.RefreshTokenRe
 	result = &dtos.RefreshTokenResp{
 		AccessToken:    accessToken,
 		AccessTokenExp: accessTokenExpAt,
+	}
+
+	return
+}
+
+func (u *authUsecase) GoogleOAuthCallBack(ctx context.Context, code, state string) (result *dtos.LoginResp, err error) {
+	action := "authUsecase.GoogleOAuthCallBack"
+
+	u.logger.Infof("%s start: code %s", action, code)
+
+	googleUser, err := u.oauth.GetGoogleUserInfo(ctx, code)
+	if err != nil {
+		u.logger.Errorf("[%s] error: %v", action, err)
+		return
+	}
+
+	result = &dtos.LoginResp{}
+
+	user, err := u.userSvc.FindUserByEmail(ctx, googleUser.Email)
+	if err != nil || user == nil {
+		newUser := &dtos.UserDto{
+			Email:     googleUser.Email,
+			FirstName: googleUser.GivenName,
+			LastName:  googleUser.FamilyName,
+			LastLogin: time.Now().UTC().Unix(),
+		}
+
+		user, err = u.userSvc.CreateOAuthUser(ctx, newUser, enums.GoogleAuthenType)
+		if err != nil || user == nil {
+			u.logger.Errorf("[%s] error: %v", action, err)
+			return nil, err
+		}
+	}
+	result.UserId = user.Id
+
+	// set state to cache like refresh token
+	key := fmt.Sprintf("users:%s:rfk:%s", user.Id, state)
+	refreshDuration := time.Duration(u.configs.Auth.JWT.RefreshExpired) * time.Minute
+	err = u.cache.Set(key, user.Id, &refreshDuration)
+	if err != nil {
+		u.logger.Errorf("[%s] error: %v", action, err)
+		return
+	}
+
+	// set user data state
+	stateKey := fmt.Sprintf("users:state:%s", state)
+	err = u.cache.Set(stateKey, user.Id, &refreshDuration)
+	if err != nil {
+		u.logger.Errorf("[%s] error: %v", action, err)
+		return
 	}
 
 	return

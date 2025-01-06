@@ -5,6 +5,7 @@ import (
 	"dreon_ecommerce_server/libs/crypto"
 	"dreon_ecommerce_server/pkg/domains/auth/dtos"
 	"dreon_ecommerce_server/pkg/domains/auth/interfaces"
+	"dreon_ecommerce_server/pkg/infrastructures/models"
 	"dreon_ecommerce_server/pkg/infrastructures/repositories"
 	"dreon_ecommerce_server/shared/enums"
 	sharedI "dreon_ecommerce_server/shared/interfaces"
@@ -25,6 +26,7 @@ type IUserSvc interface {
 	IsExistUserByEmail(ctx context.Context, email string) (result bool, err error)
 	FindUserByEmail(ctx context.Context, email string) (result *dtos.UserDto, err error)
 	FindUserById(ctx context.Context, id string) (result *dtos.UserDto, err error)
+	CreateOAuthUser(ctx context.Context, req *dtos.UserDto, authenType enums.AuthenType) (result *dtos.UserDto, err error)
 }
 
 func NewUserSvc() *userSvc {
@@ -112,4 +114,29 @@ func (s *userSvc) FindUserById(ctx context.Context, id string) (result *dtos.Use
 	}
 
 	return result, nil
+}
+
+func (s *userSvc) CreateOAuthUser(ctx context.Context, req *dtos.UserDto, authenType enums.AuthenType) (result *dtos.UserDto, err error) {
+	action := "userSvc.CreateUser"
+
+	model := &models.User{}
+	err = s.mapper.Mapper(req, model)
+	if err != nil {
+		return nil, err
+	}
+
+	model.AuthType = string(authenType)
+	model.Status = enums.USER_STATUS_ACTIVE
+
+	new, err := s.userRepo.Create(ctx, model)
+	if err != nil {
+		s.logger.Errorf("[%s] error %v", action)
+		return nil, err
+	}
+
+	req.Id = new.Id
+
+	result = req
+
+	return
 }

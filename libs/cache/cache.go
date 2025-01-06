@@ -3,7 +3,6 @@ package cache
 import (
 	"context"
 	"dreon_ecommerce_server/shared/interfaces"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -49,13 +48,7 @@ func (c *appCache) Get(key string) (interface{}, error) {
 		return nil, err
 	}
 
-	var result interface{}
-	err = json.Unmarshal([]byte(val), &result)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return val, nil
 }
 
 func (c *appCache) Delete(key string) error {

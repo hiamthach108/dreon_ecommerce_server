@@ -109,3 +109,31 @@ func (c *authController) RefreshToken(ctx echo.Context) (err error) {
 
 	return helpers.SuccessResponse(ctx, result)
 }
+
+func (c *authController) GoogleCallback(ctx echo.Context) (err error) {
+	code := ctx.QueryParam("code")
+	if code == "" {
+		appErr := constants.NewBadRequest(nil, "invalid code")
+		return appErr.ToEchoHTTPError()
+	}
+
+	state := ctx.QueryParam("state")
+	if state == "" {
+		appErr := constants.NewBadRequest(nil, "invalid state")
+		return appErr.ToEchoHTTPError()
+	}
+
+	result, err := c.authUsecase.GoogleOAuthCallBack(ctx.Request().Context(), code, state)
+	if err != nil || result == nil {
+		if appErr, ok := err.(*constants.AppError); ok {
+			return appErr.ToEchoHTTPError()
+		}
+		appErr := constants.NewBadRequest(err, "google callback failed")
+
+		return appErr.ToEchoHTTPError()
+	}
+
+	return helpers.SuccessResponse(ctx, map[string]interface{}{
+		"message": "login success you can close this window",
+	})
+}
