@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+
+	"github.com/google/uuid"
 )
 
 func GenerateRandomString(length int) (string, error) {
@@ -20,4 +22,8 @@ func GenerateRandomString(length int) (string, error) {
 	encoded := base64.URLEncoding.EncodeToString(randomBytes)
 	// Trim to exact length requested
 	return encoded[:length], nil
+}
+
+func GenerateUUID() string {
+	return uuid.New().String()
 }
